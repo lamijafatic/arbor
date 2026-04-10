@@ -1,0 +1,6 @@
+setup.py
+arbor.egg-info/PKG-INFO
+arbor.egg-info/SOURCES.txt
+arbor.egg-info/dependency_links.txt
+arbor.egg-info/entry_points.txt
+arbor.egg-info/top_level.txt
