@@ -4,31 +4,24 @@ import os
 from infrastructure.repository.abstract_repo import AbstractRepository
 
 
+import os
+import importlib.resources as ir
+
+
 def _find_repo_json():
-    """Locate data/repository.json whether running from source or installed."""
-    # 1. Current working directory (project root when running from source)
+    # 1. Local project (dev mode)
     cwd_path = os.path.join(os.getcwd(), "data", "repository.json")
     if os.path.exists(cwd_path):
         return cwd_path
 
-    # 2. Relative to this file (works in development: infrastructure/repository/ → ../../data/)
-    here = os.path.dirname(os.path.abspath(__file__))
-    rel_path = os.path.normpath(os.path.join(here, "..", "..", "data", "repository.json"))
-    if os.path.exists(rel_path):
-        return rel_path
-
-    # 3. Installed package data via importlib.resources (Python 3.9+)
+    # 2. Package-installed version
     try:
-        import importlib.resources as ir
-        ref = ir.files("data").joinpath("repository.json")
-        if ref.is_file():
-            return str(ref)
+        return str(ir.files("data").joinpath("repository.json"))
     except Exception:
         pass
 
     raise FileNotFoundError(
-        "Cannot find data/repository.json. "
-        "Make sure you are running arbor from the project directory or have installed it correctly."
+        "Cannot find repository.json (neither local nor installed package)."
     )
 
 

@@ -24,3 +24,9 @@ include = ["cli*", "core*", "domain*", "application*", "infrastructure*"]
 
 [tool.setuptools.package-data]
 "*" = ["data/*.json"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+
+[tool.setuptools.package-data]
+"*" = ["data/*.json"]
