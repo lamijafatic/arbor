@@ -50,6 +50,26 @@ REAL_GROUPS = {
             "xgboost":      ">=1.6.0",
         },
     },
+    "xlarge": {
+        "label": "XLarge — 15 direct deps (full stack)",
+        "deps": {
+            "numpy":        ">=1.24.0",
+            "pandas":       ">=1.5.0",
+            "scipy":        ">=1.9.0",
+            "matplotlib":   ">=3.5.0",
+            "scikit-learn": ">=1.1.0",
+            "requests":     ">=2.28.0",
+            "pillow":       ">=9.0.0",
+            "xgboost":      ">=1.6.0",
+            "flask":        ">=2.0.0",
+            "sqlalchemy":   ">=1.4.0",
+            "pytest":       ">=7.0.0",
+            "pydantic":     ">=1.10.0",
+            "click":        ">=8.0.0",
+            "tqdm":         ">=4.60.0",
+            "cryptography": ">=38.0.0",
+        },
+    },
 }
 
 STRATEGIES = ["sat", "backtracking", "hypergraph"]
@@ -105,10 +125,10 @@ class SyntheticGraph:
 
 
 SYNTHETIC_CASES = [
-    {"label": "Synthetic S  — 5 pkgs × 5 versions, tight chain",           "n": 5,  "v": 5,  "c": 0},
-    {"label": "Synthetic M  — 10 pkgs × 8 versions, tight chain",          "n": 10, "v": 8,  "c": 0},
-    {"label": "Synthetic L  — 15 pkgs × 10 versions, tight chain",         "n": 15, "v": 10, "c": 0},
-    {"label": "Synthetic LC — 15 pkgs × 10 versions, chain + 5 conflicts", "n": 15, "v": 10, "c": 5},
+    {"label": "Synthetic S   — 20 pkgs × 10 versions, tight chain",           "n": 20,  "v": 10, "c": 0},
+    {"label": "Synthetic M   — 50 pkgs × 10 versions, tight chain",           "n": 50,  "v": 10, "c": 0},
+    {"label": "Synthetic L   — 100 pkgs × 10 versions, tight chain",          "n": 100, "v": 10, "c": 0},
+    {"label": "Synthetic LC  — 100 pkgs × 10 versions, chain + 10 conflicts", "n": 100, "v": 10, "c": 10},
 ]
 
 
@@ -152,11 +172,11 @@ class DiamondConflictGraph:
 
 
 DIAMOND_CASES = [
-    {"label": "Diamond S  — 3+3 frameworks + core",   "n": 3},
-    {"label": "Diamond M  — 5+5 frameworks + core",   "n": 5},
-    {"label": "Diamond L  — 8+8 frameworks + core",   "n": 8},
-    {"label": "Diamond XL — 10+10 frameworks + core", "n": 10},
-    {"label": "Diamond XXL— 12+12 frameworks + core", "n": 12},
+    {"label": "Diamond S   —  5+5  frameworks + core",  "n": 5},
+    {"label": "Diamond M   — 10+10 frameworks + core",  "n": 10},
+    {"label": "Diamond L   — 15+15 frameworks + core",  "n": 15},
+    {"label": "Diamond XL  — 25+25 frameworks + core",  "n": 25},
+    {"label": "Diamond XXL — 50+50 frameworks + core",  "n": 50},
 ]
 
 
@@ -231,6 +251,9 @@ def _print_table(label: str, pkg_count: int, runs: int, results: dict):
 
     for strategy in STRATEGIES:
         data = results[strategy]
+        if data.get("skipped"):
+            print(f"  {strategy:<14} {'—':>10} {'—':>10} {'—':>10}  not run (>24h projected)")
+            continue
         if data["failed"] or not data["times"]:
             print(f"  {strategy:<14} {'FAILED':>10}")
             continue
@@ -248,16 +271,23 @@ def _print_summary(all_entries: list):
     print(f"  {'-'*36}  {'-'*9}  {'-'*9}  {'-'*9}  {'-'*11}")
     for entry in all_entries:
         name, results = entry["name"], entry["results"]
-        row = {
-            s: (_median(d["times"]) if not d["failed"] and d["times"] else float("inf"))
-            for s, d in results.items()
-        }
-        fastest = min(row, key=row.get)
+        row = {}
+        for s, d in results.items():
+            if d.get("skipped") or d["failed"] or not d["times"]:
+                row[s] = float("inf")
+            else:
+                row[s] = _median(d["times"])
+        fastest = min((s for s in row if row[s] < float("inf")), key=row.get, default="—")
+        def _show(s):
+            v = row[s]
+            return "  >24h" if v == float("inf") and results[s].get("skipped") else (
+                "FAILED" if v == float("inf") else _fmt(v)
+            )
         print(
             f"  {name[:36]:<36}  "
-            f"{_fmt(row['sat']):>9}  "
-            f"{_fmt(row['backtracking']):>9}  "
-            f"{_fmt(row['hypergraph']):>9}  "
+            f"{_show('sat'):>9}  "
+            f"{_show('backtracking'):>9}  "
+            f"{_show('hypergraph'):>9}  "
             f"{fastest}"
         )
     print(f"{'═' * 66}\n")
@@ -304,15 +334,27 @@ def run_synthetic(runs: int) -> list:
     return entries
 
 
+# Backtracking scales as O(v^n) on diamond conflicts.
+# At n > BT_MAX_DIAMOND it would run for >24 hours, so we skip it.
+BT_MAX_DIAMOND = 12
+
+
 def run_diamond(runs: int) -> list:
     entries = []
     for case in DIAMOND_CASES:
         n         = case["n"]
         graph     = DiamondConflictGraph(n)
         pkg_count = 2 * n + 1
-        results   = {
+
+        if n <= BT_MAX_DIAMOND:
+            bt_result = _time_solver(BacktrackingResolver, graph, runs)
+        else:
+            # Mark as skipped — would exceed 24 hours at this scale
+            bt_result = {"times": [], "failed": False, "skipped": True, "solution": None}
+
+        results = {
             "sat":          _time_solver(SATResolver, graph, runs),
-            "backtracking": _time_solver(BacktrackingResolver, graph, runs),
+            "backtracking": bt_result,
             "hypergraph":   _time_hypergraph_synthetic(graph, runs),
         }
         _print_table(case["label"], pkg_count, runs, results)
