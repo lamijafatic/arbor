@@ -40,9 +40,10 @@ def run(args):
     print()
 
     print(c("  Next steps:", DIM))
-    print(c(f"    source .venv/bin/activate   — activate virtual environment", DIM))
     print(c(f"    arbor add numpy '>=1.20'   — add a dependency", DIM))
-    print(c(f"    arbor resolve              — resolve all constraints", DIM))
-    print(c(f"    arbor install              — install dependencies", DIM))
+    print(c(f"    arbor resolve              — resolve constraints (hypergraph solver)", DIM))
+    print(c(f"    arbor install              — install dependencies into .venv", DIM))
+    print(c(f"    arbor stat                 — see algorithm efficiency report", DIM))
+    print(c(f"    arbor demo                 — walk through the algorithm interactively", DIM))
     print()
     return 0

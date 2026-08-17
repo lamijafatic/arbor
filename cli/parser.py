@@ -4,7 +4,7 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(
         prog="arbor",
-        description="Arbor — Python Package Manager with SAT-Based Dependency Resolution",
+        description="Arbor — Python Package Manager with Hypergraph Dependency Resolution",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
@@ -58,12 +58,12 @@ def parse_args():
     p_update.add_argument("package", nargs="?", default=None, help="Package to update (omit for all)")
 
     # ── Resolution ───────────────────────────────────────────
-    p_resolve = sub.add_parser("resolve", help="Resolve dependencies using SAT solver")
+    p_resolve = sub.add_parser("resolve", help="Resolve dependencies (default: hypergraph solver)")
     p_resolve.add_argument(
         "--strategy",
-        choices=["sat", "backtracking", "hypergraph"],
-        default="sat",
-        help="Resolution algorithm (default: sat)",
+        choices=["hypergraph", "sat", "backtracking"],
+        default="hypergraph",
+        help="Resolution algorithm (default: hypergraph)",
     )
 
     sub.add_parser("lock", help="Regenerate lock file (same as resolve)")
@@ -93,10 +93,26 @@ def parse_args():
 
     sub.add_parser("list", help="List all packages in the registry")
 
+    # ── Analysis ─────────────────────────────────────────────
+    sub.add_parser(
+        "stat",
+        help="Live algorithm efficiency benchmark — bar charts, speedups, complexity",
+    )
+
+    p_demo = sub.add_parser(
+        "demo",
+        help="Interactive algorithm walkthrough — step through a diamond conflict example",
+    )
+    p_demo.add_argument(
+        "--auto",
+        action="store_true",
+        help="Run all steps without pausing (non-interactive mode)",
+    )
+
     # ── Debug ────────────────────────────────────────────────
     sub.add_parser("graph", help="Visualize the dependency graph")
 
-    sub.add_parser("trace", help="Trace the resolution process step-by-step")
+    sub.add_parser("trace", help="Trace the hypergraph resolution process step-by-step")
 
     sub.add_parser("dump", help="Dump internal project state as JSON")
 

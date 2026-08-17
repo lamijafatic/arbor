@@ -73,9 +73,9 @@ def banner():
     logo = [
         "",
         c("  ╔══════════════════════════════════════╗", BRIGHT_CYAN),
-        c("  ║", BRIGHT_CYAN) + c("         ⚡  ARBOR  v0.1.0  ⚡         ", BOLD, BRIGHT_WHITE) + c("║", BRIGHT_CYAN),
+        c("  ║", BRIGHT_CYAN) + c("        ⬡  ARBOR  v0.1.0               ", BOLD, BRIGHT_WHITE) + c("║", BRIGHT_CYAN),
         c("  ║", BRIGHT_CYAN) + c("      Python Package Manager           ", DIM) + c("║", BRIGHT_CYAN),
-        c("  ║", BRIGHT_CYAN) + c("      SAT-Based Dependency Resolver    ", DIM) + c("║", BRIGHT_CYAN),
+        c("  ║", BRIGHT_CYAN) + c("      Hypergraph Dependency Resolver   ", DIM) + c("║", BRIGHT_CYAN),
         c("  ╚══════════════════════════════════════╝", BRIGHT_CYAN),
         "",
     ]
@@ -243,3 +243,48 @@ def prompt_input(msg, default=None):
 
 def divider():
     print(c("  " + "─" * 44, DIM))
+
+
+def bar_chart_row(label, value, max_val, unit="ms", bar_width=30, color=None):
+    """Print one labeled bar chart row."""
+    if max_val <= 0:
+        max_val = 1
+    pct = min(value / max_val, 1.0)
+    filled = max(int(bar_width * pct), 1 if value > 0 else 0)
+    fill_color = color or BRIGHT_GREEN
+    bar = c("█" * filled, fill_color) + c("░" * (bar_width - filled), DIM)
+    val_str = f"{value:.3f} {unit}" if isinstance(value, float) else f"{value} {unit}"
+    print(f"  {label:<18} [{bar}]  {c(val_str, BOLD)}")
+
+
+def step_header(n, total, title):
+    """Print a numbered step header for the demo."""
+    tag = c(f"  [ Step {n} / {total} ]", BRIGHT_CYAN)
+    print()
+    print(f"{tag}  {c(title, BOLD, BRIGHT_WHITE)}")
+    print(c("  " + "─" * 50, DIM))
+    print()
+
+
+def menu_prompt(options, prompt="  Choose"):
+    """Show a numbered menu and return the selected index (1-based)."""
+    for i, opt in enumerate(options, 1):
+        print(c(f"    [{i}]", BRIGHT_CYAN) + f"  {opt}")
+    print()
+    while True:
+        try:
+            raw = input(c(f"{prompt} [1-{len(options)}]: ", BRIGHT_YELLOW)).strip()
+            if raw.isdigit() and 1 <= int(raw) <= len(options):
+                return int(raw)
+            print(c(f"  Enter a number between 1 and {len(options)}.", DIM))
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return len(options)  # last option = exit/cancel
+
+
+def pause(msg="  Press Enter to continue..."):
+    try:
+        input(c(msg, DIM))
+    except (EOFError, KeyboardInterrupt):
+        print()
+        raise KeyboardInterrupt

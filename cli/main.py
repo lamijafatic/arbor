@@ -44,42 +44,49 @@ from cli.commands.bot.check import run as bot_check_cmd
 from cli.commands.bot.run import run as bot_run_cmd
 from cli.commands.bot.config_cmd import run as bot_config_cmd
 
+# Analysis commands
+from cli.commands.stat import run as stat_cmd
+from cli.commands.demo import run as demo_cmd
+
 
 COMMANDS = {
     # project
-    "init": init_cmd,
-    "info": info_cmd,
-    "doctor": doctor_cmd,
-    "status": status_cmd,
-    "import": import_cmd,
+    "init":     init_cmd,
+    "info":     info_cmd,
+    "doctor":   doctor_cmd,
+    "status":   status_cmd,
+    "import":   import_cmd,
     # dependency
-    "add": add_cmd,
-    "remove": remove_cmd,
-    "show": show_cmd,
-    "update": update_cmd,
+    "add":      add_cmd,
+    "remove":   remove_cmd,
+    "show":     show_cmd,
+    "update":   update_cmd,
     # resolution
-    "resolve": resolve_cmd,
-    "lock": lock_cmd,
-    "explain": explain_cmd,
+    "resolve":   resolve_cmd,
+    "lock":      lock_cmd,
+    "explain":   explain_cmd,
     "conflicts": conflicts_cmd,
     # environment
-    "install": install_cmd,
-    "sync": sync_cmd,
-    "clean": clean_cmd,
-    "build": build_cmd,
+    "install":  install_cmd,
+    "sync":     sync_cmd,
+    "clean":    clean_cmd,
+    "build":    build_cmd,
     # package registry
-    "search": search_cmd,
+    "search":   search_cmd,
     "versions": versions_cmd,
-    "list": list_cmd,
+    "list":     list_cmd,
+    # analysis
+    "stat":     stat_cmd,
+    "demo":     demo_cmd,
     # debug
-    "graph": graph_cmd,
-    "trace": trace_cmd,
-    "dump": dump_cmd,
+    "graph":    graph_cmd,
+    "trace":    trace_cmd,
+    "dump":     dump_cmd,
     # bot
-    "bot-setup": bot_setup_cmd,
-    "bot-check": bot_check_cmd,
-    "bot-run": bot_run_cmd,
-    "bot-config": bot_config_cmd,
+    "bot-setup":   bot_setup_cmd,
+    "bot-check":   bot_check_cmd,
+    "bot-run":     bot_run_cmd,
+    "bot-config":  bot_config_cmd,
 }
 
 
@@ -88,19 +95,39 @@ def main():
         args = parse_args()
 
         if not args.command:
-            from core.ui import banner, c, DIM, info
+            from core.ui import banner, c, DIM, BRIGHT_CYAN, BRIGHT_WHITE, BOLD, BRIGHT_GREEN, bold
             banner()
-            print(c("  Usage: arbor <command> [options]", DIM))
+
+            # Quick start block
+            print(c("  Quick start\n", BOLD))
+            qs = [
+                ("arbor demo",                   "walk through the algorithm interactively"),
+                ("arbor init",                   "set up a new project"),
+                ("arbor add numpy '>=1.24'",      "add a dependency"),
+                ("arbor resolve",                "resolve all constraints"),
+                ("arbor install",                "install packages into venv"),
+            ]
+            for cmd, desc in qs:
+                print(f"    {c(f'{cmd:<30}', BRIGHT_CYAN)}{c(desc, DIM)}")
             print()
-            print(c("  Project:      init, info, status, doctor, import", DIM))
-            print(c("  Dependencies: add, remove, show, update", DIM))
-            print(c("  Resolution:   resolve, lock, explain, conflicts", DIM))
-            print(c("  Environment:  install, sync, clean, build", DIM))
-            print(c("  Registry:     search, versions, list", DIM))
-            print(c("  Debug:        graph, trace, dump", DIM))
-            print(c("  Bot:          bot-setup, bot-check, bot-run, bot-config", DIM))
+
+            # Command groups
+            groups = [
+                ("Project",      ["init", "info", "status", "doctor", "import"]),
+                ("Dependencies", ["add", "remove", "show", "update"]),
+                ("Resolution",   ["resolve", "lock", "explain", "conflicts"]),
+                ("Environment",  ["install", "sync", "clean", "build"]),
+                ("Registry",     ["search", "versions", "list"]),
+                ("Analysis",     ["stat", "demo", "graph", "trace", "dump"]),
+                ("Bot",          ["bot-setup", "bot-check", "bot-run", "bot-config"]),
+            ]
+            print(c("  Commands\n", BOLD))
+            for group, cmds in groups:
+                cmd_str = "  ·  ".join(c(cmd, BRIGHT_WHITE) for cmd in cmds)
+                print(f"    {c(f'{group:<14}', DIM)}{cmd_str}")
             print()
-            print(c("  Run 'arbor --help' for full documentation.", DIM))
+            print(c("  arbor <command> --help   for options and examples", DIM))
+            print()
             return 0
 
         handler = COMMANDS.get(args.command)
