@@ -24,15 +24,32 @@ class Constraint:
             op, ver_str = match.groups()
             op = op or "=="
 
-            # ~= X.Y  means  >= X.Y, == X.*  — treat as >= X.Y
-            if op == "~=":
-                op = ">="
-
             # Strip any non-numeric suffix (e.g. ".post1", ".dev0")
             ver_clean = re.match(r"^(\d+(?:\.\d+)*)", ver_str)
             if not ver_clean:
                 continue
             ver_str = ver_clean.group(1)
+
+            # ~= X.Y[.Z] means >= X.Y[.Z] AND < X.(Y+1) — compatible release.
+            # Example: ~=2.28 → >=2.28, <3     (drop last segment, bump previous)
+            #          ~=1.4.2 → >=1.4.2, <1.5
+            if op == "~=":
+                parts = ver_str.split(".")
+                if len(parts) >= 2:
+                    try:
+                        conditions.append((">=", Version(ver_str)))
+                        upper = parts[:-1]
+                        upper[-1] = str(int(upper[-1]) + 1)
+                        conditions.append(("<", Version(".".join(upper))))
+                    except Exception:
+                        pass
+                else:
+                    # ~=X (single segment) — not valid PEP 440, fall back to >=
+                    try:
+                        conditions.append((">=", Version(ver_str)))
+                    except Exception:
+                        pass
+                continue
 
             try:
                 conditions.append((op, Version(ver_str)))
